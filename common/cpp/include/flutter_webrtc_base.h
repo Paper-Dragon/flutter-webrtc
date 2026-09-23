@@ -30,6 +30,7 @@ using namespace libwebrtc;
 class FlutterVideoRenderer;
 class FlutterRTCDataChannelObserver;
 class FlutterPeerConnectionObserver;
+class FlutterHostFrameSource;
 
 class FlutterWebRTCBase {
  public:
@@ -41,6 +42,7 @@ class FlutterWebRTCBase {
   friend class FlutterScreenCapture;
   friend class FlutterFrameCryptor;
   friend class FlutterDataPacketCryptor;
+  friend class FlutterHostFrameSource;
   enum ParseConstraintType { kMandatory, kOptional };
 
  public:
