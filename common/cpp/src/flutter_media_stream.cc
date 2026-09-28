@@ -2,6 +2,8 @@
 
 #include "flutter_utf8_sanitize.h"
 
+#include <cctype>
+
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720
 #define DEFAULT_FPS 30
@@ -9,6 +11,17 @@
 namespace flutter_webrtc_plugin {
 
 namespace {
+
+bool AudioDeviceIdEqual(const std::string& a, const std::string& b) {
+  if (a.size() != b.size()) return false;
+  for (size_t i = 0; i < a.size(); i++) {
+    if (std::tolower(static_cast<unsigned char>(a[i])) !=
+        std::tolower(static_cast<unsigned char>(b[i]))) {
+      return false;
+    }
+  }
+  return true;
+}
 
 std::string SanitizeDeviceIdFromAudioBuffers(const char* name, const char* guid) {
   const std::string raw = (guid != nullptr && strlen(guid) > 0)
@@ -216,23 +229,30 @@ void FlutterMediaStream::GetUserAudio(const EncodableMap& constraints,
     int playout_devices = base_->audio_device_->PlayoutDevices();
     int recording_devices = base_->audio_device_->RecordingDevices();
 
+    bool recording_set = false;
+    const std::string requested_source = sourceId;
     for (uint16_t i = 0; i < recording_devices; i++) {
       base_->audio_device_->RecordingDeviceName(i, strRecordingName,
                                                 strRecordingGuid);
-      if (sourceId != "" &&
-          sourceId ==
-              SanitizeDeviceIdFromAudioBuffers(strRecordingName,
-                                               strRecordingGuid)) {
+      const std::string cur_id = SanitizeDeviceIdFromAudioBuffers(
+          strRecordingName, strRecordingGuid);
+      if (requested_source != "" &&
+          AudioDeviceIdEqual(requested_source, cur_id)) {
         base_->audio_device_->SetRecordingDevice(i);
+        sourceId = cur_id;
+        recording_set = true;
+        break;
       }
     }
 
-    if (sourceId == "") {
+    if (!recording_set && recording_devices > 0) {
       base_->audio_device_->RecordingDeviceName(0, strRecordingName,
                                                 strRecordingGuid);
       sourceId = SanitizeDeviceIdFromAudioBuffers(strRecordingName,
                                                   strRecordingGuid);
-      base_->audio_device_->SetRecordingDevice(0);
+      if (requested_source == "") {
+        base_->audio_device_->SetRecordingDevice(0);
+      }
     }
 
     char strPlayoutName[256];
@@ -240,11 +260,11 @@ void FlutterMediaStream::GetUserAudio(const EncodableMap& constraints,
     for (uint16_t i = 0; i < playout_devices; i++) {
       base_->audio_device_->PlayoutDeviceName(i, strPlayoutName,
                                               strPlayoutGuid);
-      if (deviceId != "" &&
-          deviceId ==
-              SanitizeDeviceIdFromAudioBuffers(strPlayoutName,
-                                               strPlayoutGuid)) {
+      const std::string cur_id =
+          SanitizeDeviceIdFromAudioBuffers(strPlayoutName, strPlayoutGuid);
+      if (deviceId != "" && AudioDeviceIdEqual(deviceId, cur_id)) {
         base_->audio_device_->SetPlayoutDevice(i);
+        break;
       }
     }
 
@@ -487,7 +507,7 @@ void FlutterMediaStream::SelectAudioOutput(
     base_->audio_device_->PlayoutDeviceName(i, deviceName, deviceGuid);
     std::string cur_device_id =
         SanitizeDeviceIdFromAudioBuffers(deviceName, deviceGuid);
-    if (device_id != "" && device_id == cur_device_id) {
+    if (device_id != "" && AudioDeviceIdEqual(device_id, cur_device_id)) {
       base_->audio_device_->SetPlayoutDevice(i);
       found = true;
       break;
@@ -512,7 +532,7 @@ void FlutterMediaStream::SelectAudioInput(
     base_->audio_device_->RecordingDeviceName(i, deviceName, deviceGuid);
     std::string cur_device_id =
         SanitizeDeviceIdFromAudioBuffers(deviceName, deviceGuid);
-    if (device_id != "" && device_id == cur_device_id) {
+    if (device_id != "" && AudioDeviceIdEqual(device_id, cur_device_id)) {
       base_->audio_device_->SetRecordingDevice(i);
       found = true;
       break;
