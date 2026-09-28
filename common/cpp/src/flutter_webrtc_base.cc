@@ -54,13 +54,6 @@ void FlutterWebRTCBase::EnsureWebRTCInitialized(bool enable_warp,
   webrtc_initialized_ = true;
   warp_enabled_ = enable_warp;
 
-  // WARP (WebRTC Abridged Roundtrip Protocol, draft-uberti-tsvwg-warp) is
-  // opted into through the `enableWARP` initialize() option. The part of it
-  // that libwebrtc implements is `WebRTC-IceHandshakeDtls`, the DTLS handshake
-  // piggybacked on the ICE STUN binding exchange. Field trials are process
-  // global and are read when the peer connection factory builds its
-  // environment, which is why the factory is created here instead of in the
-  // constructor: the options only arrive with the initialize() call.
   std::vector<libwebrtc::string> field_trials;
   if (enable_warp) {
     field_trials.push_back(
@@ -70,6 +63,9 @@ void FlutterWebRTCBase::EnsureWebRTCInitialized(bool enable_warp,
     field_trials.push_back(FieldTrial(kFieldTrialForcePlayoutDelayKey,
                                       kFieldTrialZeroPlayoutDelayValue));
   }
+
+  field_trials.push_back(
+      EnabledFieldTrial(kRTCFieldTrialH264HighProfileKey));
 
   if (field_trials.empty()) {
     LibWebRTC::Initialize();

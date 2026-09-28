@@ -4,8 +4,6 @@
 #include "rtc_peerconnection_factory.h"
 #include "rtc_video_frame.h"
 
-#include <tuple>
-
 namespace flutter_webrtc_plugin {
 namespace {
 
@@ -38,41 +36,52 @@ void BgraToI420(const uint8_t* bgra,
   u_plane->resize(uv_w * uv_h);
   v_plane->resize(uv_w * uv_h);
 
-  for (int j = 0; j < height; ++j) {
-    const uint8_t* row = bgra + j * stride;
-    uint8_t* yrow = y_plane->data() + j * width;
-    for (int i = 0; i < width; ++i) {
-      const uint8_t* p = row + i * 4;
-      const int b = p[0];
-      const int g = p[1];
-      const int r = p[2];
-      yrow[i] =
-          static_cast<uint8_t>(((66 * r + 129 * g + 25 * b + 128) >> 8) + 16);
-    }
-  }
+  uint8_t* yd = y_plane->data();
+  uint8_t* ud = u_plane->data();
+  uint8_t* vd = v_plane->data();
 
   for (int j = 0; j < height; j += 2) {
     const int j1 = (j + 1 < height) ? j + 1 : j;
+    const uint8_t* row0 = bgra + j * stride;
+    const uint8_t* row1 = bgra + j1 * stride;
+    uint8_t* yrow0 = yd + j * width;
+    uint8_t* yrow1 = yd + j1 * width;
+    uint8_t* urow = ud + (j / 2) * static_cast<int>(uv_w);
+    uint8_t* vrow = vd + (j / 2) * static_cast<int>(uv_w);
+
     for (int i = 0; i < width; i += 2) {
       const int i1 = (i + 1 < width) ? i + 1 : i;
-      auto at = [&](int x, int y) -> std::tuple<int, int, int> {
-        const uint8_t* p = bgra + y * stride + x * 4;
-        return {p[2], p[1], p[0]};
-      };
-      int r0, g0, b0, r1, g1, b1, r2, g2, b2, r3, g3, b3;
-      std::tie(r0, g0, b0) = at(i, j);
-      std::tie(r1, g1, b1) = at(i1, j);
-      std::tie(r2, g2, b2) = at(i, j1);
-      std::tie(r3, g3, b3) = at(i1, j1);
-      const int r = (r0 + r1 + r2 + r3) / 4;
-      const int g = (g0 + g1 + g2 + g3) / 4;
-      const int b = (b0 + b1 + b2 + b3) / 4;
-      const size_t uv_index =
-          static_cast<size_t>(j / 2) * uv_w + static_cast<size_t>(i / 2);
-      (*u_plane)[uv_index] = static_cast<uint8_t>(
-          ((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128);
-      (*v_plane)[uv_index] = static_cast<uint8_t>(
-          ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128);
+      const uint8_t* p00 = row0 + i * 4;
+      const uint8_t* p01 = row0 + i1 * 4;
+      const uint8_t* p10 = row1 + i * 4;
+      const uint8_t* p11 = row1 + i1 * 4;
+
+      const int b00 = p00[0], g00 = p00[1], r00 = p00[2];
+      const int b01 = p01[0], g01 = p01[1], r01 = p01[2];
+      const int b10 = p10[0], g10 = p10[1], r10 = p10[2];
+      const int b11 = p11[0], g11 = p11[1], r11 = p11[2];
+
+      yrow0[i]  = static_cast<uint8_t>(((66 * r00 + 129 * g00 + 25 * b00 + 128) >> 8) + 16);
+      yrow0[i1] = static_cast<uint8_t>(((66 * r01 + 129 * g01 + 25 * b01 + 128) >> 8) + 16);
+      yrow1[i]  = static_cast<uint8_t>(((66 * r10 + 129 * g10 + 25 * b10 + 128) >> 8) + 16);
+      yrow1[i1] = static_cast<uint8_t>(((66 * r11 + 129 * g11 + 25 * b11 + 128) >> 8) + 16);
+
+      const int r = (r00 + r01 + r10 + r11 + 2) >> 2;
+      const int g = (g00 + g01 + g10 + g11 + 2) >> 2;
+      const int b = (b00 + b01 + b10 + b11 + 2) >> 2;
+
+      urow[i / 2] = static_cast<uint8_t>(((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128);
+      vrow[i / 2] = static_cast<uint8_t>(((112 * r - 94 * g - 18 * b + 128) >> 8) + 128);
+    }
+  }
+
+  if (height & 1) {
+    const int j = height - 1;
+    const uint8_t* row = bgra + j * stride;
+    uint8_t* yrow = yd + j * width;
+    for (int i = 0; i < width; ++i) {
+      const uint8_t* p = row + i * 4;
+      yrow[i] = static_cast<uint8_t>(((66 * p[2] + 129 * p[1] + 25 * p[0] + 128) >> 8) + 16);
     }
   }
 }
