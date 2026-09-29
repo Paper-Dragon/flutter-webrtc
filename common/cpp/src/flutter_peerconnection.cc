@@ -187,8 +187,14 @@ EncodableMap rtpParametersToMap(
         EncodableValue(static_cast<int>(encoding->max_framerate()));
     map[EncodableValue("scaleResolutionDownBy")] =
         EncodableValue(encoding->scale_resolution_down_by());
-    map[EncodableValue("scalabilityMode")] =
-        EncodableValue(encoding->scalability_mode().std_string());
+    {
+      const std::string scalability_mode =
+          encoding->scalability_mode().std_string();
+      if (!scalability_mode.empty()) {
+        map[EncodableValue("scalabilityMode")] =
+            EncodableValue(scalability_mode);
+      }
+    }
     map[EncodableValue("ssrc")] =
         EncodableValue(static_cast<int>(encoding->ssrc()));
     map[EncodableValue("priority")] =
@@ -610,7 +616,10 @@ FlutterPeerConnection::mapToEncoding(const EncodableMap& params) {
 
   value = findEncodableValue(params, "scalabilityMode");
   if (!value.IsNull()) {
-    encoding->set_scalability_mode(GetValue<std::string>(value));
+    const std::string scalability_mode = GetValue<std::string>(value);
+    if (!scalability_mode.empty()) {
+      encoding->set_scalability_mode(scalability_mode);
+    }
   }
 
   value = findEncodableValue(params, "priority");
@@ -821,7 +830,10 @@ scoped_refptr<RTCRtpParameters> FlutterPeerConnection::updateRtpParameters(
       }
       value = findEncodableValue(map, "scalabilityMode");
       if (!value.IsNull()) {
-        param->set_scalability_mode(GetValue<std::string>(value));
+        const std::string scalability_mode = GetValue<std::string>(value);
+        if (!scalability_mode.empty()) {
+          param->set_scalability_mode(scalability_mode);
+        }
       }
       value = findEncodableValue(map, "priority");
       if (!value.IsNull()) {
