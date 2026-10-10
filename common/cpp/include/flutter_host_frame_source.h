@@ -15,12 +15,15 @@
 #include <string>
 #include <vector>
 
+#if defined(_WIN32)
 #include <windows.h>
+#endif
 
 namespace flutter_webrtc_plugin {
 
 using namespace libwebrtc;
 
+#if defined(_WIN32)
 class HostFramePump {
  public:
   HostFramePump();
@@ -46,6 +49,7 @@ class HostFramePump {
   std::vector<uint8_t> u_;
   std::vector<uint8_t> v_;
 };
+#endif
 
 class FlutterHostFrameSource {
  public:
@@ -59,9 +63,33 @@ class FlutterHostFrameSource {
  private:
   FlutterWebRTCBase* base_;
   std::map<std::string, scoped_refptr<RTCVideoSource>> custom_sources_;
+#if defined(_WIN32)
   std::unique_ptr<HostFramePump> pump_;
+#endif
   std::string pumping_track_id_;
 };
+
+#if !defined(_WIN32)
+inline FlutterHostFrameSource::FlutterHostFrameSource(FlutterWebRTCBase* base)
+    : base_(base) {}
+
+inline void FlutterHostFrameSource::CreateCustomVideoTrack(
+    std::unique_ptr<MethodResultProxy> result) {
+  result->Error("createCustomVideoTrack", "host frames unavailable");
+}
+
+inline void FlutterHostFrameSource::StartHostShmCapture(
+    const std::string& track_id,
+    std::unique_ptr<MethodResultProxy> result) {
+  (void)track_id;
+  result->Error("startHostShmCapture", "host frames unavailable");
+}
+
+inline void FlutterHostFrameSource::StopHostShmCapture(
+    std::unique_ptr<MethodResultProxy> result) {
+  result->Success();
+}
+#endif
 
 }  // namespace flutter_webrtc_plugin
 
