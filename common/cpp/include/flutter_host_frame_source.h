@@ -61,17 +61,18 @@ class FlutterHostFrameSource {
   void StopHostShmCapture(std::unique_ptr<MethodResultProxy> result);
 
  private:
+#if defined(_WIN32)
   FlutterWebRTCBase* base_;
   std::map<std::string, scoped_refptr<RTCVideoSource>> custom_sources_;
-#if defined(_WIN32)
   std::unique_ptr<HostFramePump> pump_;
-#endif
   std::string pumping_track_id_;
+#endif
 };
 
 #if !defined(_WIN32)
-inline FlutterHostFrameSource::FlutterHostFrameSource(FlutterWebRTCBase* base)
-    : base_(base) {}
+inline FlutterHostFrameSource::FlutterHostFrameSource(FlutterWebRTCBase* base) {
+  (void)base;
+}
 
 inline void FlutterHostFrameSource::CreateCustomVideoTrack(
     std::unique_ptr<MethodResultProxy> result) {
