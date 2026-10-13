@@ -51,10 +51,6 @@ class FlutterWebRTCBase {
                     TaskRunner* task_runner);
   ~FlutterWebRTCBase();
 
-  // Initializes WebRTC and creates the peer connection factory the first time
-  // it is needed, applying the process global field trials that the
-  // `initialize()` options ask for. Field trials are read when the factory is
-  // created, so only the first call decides them; later calls are no-ops.
   void EnsureWebRTCInitialized(bool enable_warp = false,
                                bool zero_playout_delay = false);
 
@@ -99,6 +95,8 @@ class FlutterWebRTCBase {
 
   EventChannelProxy* event_channel();
 
+  void SetAdmVolumes(double speaker01, double microphone01);
+
   libwebrtc::scoped_refptr<libwebrtc::RTCRtpSender> GetRtpSenderById(
       RTCPeerConnection* pc,
       std::string id);
@@ -120,8 +118,6 @@ class FlutterWebRTCBase {
 
  protected:
   bool webrtc_initialized_ = false;
-  // Whether `enableWARP` was requested; peer connections created afterwards
-  // default to DSCP marking. See EnsureWebRTCInitialized().
   bool warp_enabled_ = false;
   scoped_refptr<RTCPeerConnectionFactory> factory_;
   scoped_refptr<RTCAudioDevice> audio_device_;

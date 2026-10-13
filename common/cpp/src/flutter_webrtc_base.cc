@@ -3,6 +3,8 @@
 #include "flutter_data_channel.h"
 #include "flutter_peerconnection.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "helper.h"
@@ -90,6 +92,18 @@ void FlutterWebRTCBase::EnsureWebRTCInitialized(bool enable_warp,
 
 EventChannelProxy* FlutterWebRTCBase::event_channel() {
   return event_channel_ ? event_channel_.get() : nullptr;
+}
+
+void FlutterWebRTCBase::SetAdmVolumes(double speaker01, double microphone01) {
+  EnsureWebRTCInitialized();
+  if (audio_device_.get() == nullptr) return;
+  auto to255 = [](double v) -> uint32_t {
+    if (v < 0) v = 0;
+    if (v > 1) v = 1;
+    return static_cast<uint32_t>(v * 255.0 + 0.5);
+  };
+  audio_device_->SetSpeakerVolume(to255(speaker01));
+  audio_device_->SetMicrophoneVolume(to255(microphone01));
 }
 
 std::string FlutterWebRTCBase::GenerateUUID() {

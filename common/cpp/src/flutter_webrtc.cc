@@ -537,6 +537,17 @@ void FlutterWebRTC::HandleMethodCall(
         GetValue<EncodableMap>(*method_call.arguments());
     const std::string track_id = findString(params, "trackId");
     MediaStreamTrackSwitchCamera(track_id, std::move(result));
+  } else if (method_call.method_name().compare("setAdmVolumes") == 0) {
+    if (!method_call.arguments()) {
+      result->Error("Bad Arguments", "setAdmVolumes() Null arguments received");
+      return;
+    }
+    const EncodableMap params = GetValue<EncodableMap>(*method_call.arguments());
+    const std::optional<double> speaker = maybeFindDouble(params, "speaker");
+    const std::optional<double> microphone =
+        maybeFindDouble(params, "microphone");
+    SetAdmVolumes(speaker.value_or(1.0), microphone.value_or(1.0));
+    result->Success();
   } else if (method_call.method_name().compare("setVolume") == 0) {
     auto args = method_call.arguments();
     if (!args) {
