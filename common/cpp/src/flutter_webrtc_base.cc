@@ -4,6 +4,7 @@
 #include "flutter_peerconnection.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "helper.h"
@@ -55,13 +56,6 @@ void FlutterWebRTCBase::EnsureWebRTCInitialized(bool enable_warp,
   webrtc_initialized_ = true;
   warp_enabled_ = enable_warp;
 
-  // WARP (WebRTC Abridged Roundtrip Protocol, draft-uberti-tsvwg-warp) is
-  // opted into through the `enableWARP` initialize() option. The part of it
-  // that libwebrtc implements is `WebRTC-IceHandshakeDtls`, the DTLS handshake
-  // piggybacked on the ICE STUN binding exchange. Field trials are process
-  // global and are read when the peer connection factory builds its
-  // environment, which is why the factory is created here instead of in the
-  // constructor: the options only arrive with the initialize() call.
   std::vector<libwebrtc::string> field_trials;
   if (enable_warp) {
     field_trials.push_back(
@@ -95,6 +89,18 @@ void FlutterWebRTCBase::EnsureWebRTCInitialized(bool enable_warp,
 
 EventChannelProxy* FlutterWebRTCBase::event_channel() {
   return event_channel_ ? event_channel_.get() : nullptr;
+}
+
+void FlutterWebRTCBase::SetAdmVolumes(double speaker01, double microphone01) {
+  EnsureWebRTCInitialized();
+  if (audio_device_.get() == nullptr) return;
+  auto to255 = [](double v) -> uint32_t {
+    if (v < 0) v = 0;
+    if (v > 1) v = 1;
+    return static_cast<uint32_t>(v * 255.0 + 0.5);
+  };
+  audio_device_->SetSpeakerVolume(to255(speaker01));
+  audio_device_->SetMicrophoneVolume(to255(microphone01));
 }
 
 std::string FlutterWebRTCBase::GenerateUUID() {

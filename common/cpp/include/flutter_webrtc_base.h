@@ -121,6 +121,8 @@ class FlutterWebRTCBase {
 
   EventChannelProxy* event_channel();
 
+  void SetAdmVolumes(double speaker01, double microphone01);
+
   libwebrtc::scoped_refptr<libwebrtc::RTCRtpSender> GetRtpSenderById(
       RTCPeerConnection* pc,
       std::string id);
