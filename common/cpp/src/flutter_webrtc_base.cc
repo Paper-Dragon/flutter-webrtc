@@ -66,6 +66,9 @@ void FlutterWebRTCBase::EnsureWebRTCInitialized(bool enable_warp,
                                       kFieldTrialZeroPlayoutDelayValue));
   }
 
+  field_trials.push_back(
+      EnabledFieldTrial(kRTCFieldTrialH264HighProfileKey));
+
   if (field_trials.empty()) {
     LibWebRTC::Initialize();
   } else {
