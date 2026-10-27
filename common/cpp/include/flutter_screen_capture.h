@@ -115,10 +115,18 @@ class FlutterScreenCapture : public MediaListObserver,
   std::mutex sources_mutex_;
   std::vector<scoped_refptr<MediaSource>> sources_;
 
+  // Capturers started by GetDisplayMedia, kept so the last reference to each
+  // one is dropped on the worker thread. Dropping it joins the capturer's
+  // thread, which may be inside PrintWindow on a window owned by this
+  // process. If that join ran on the platform thread, or on a thread the
+  // platform thread is blocked on, it could deadlock.
   std::mutex capturers_mutex_;
   std::vector<scoped_refptr<RTCDesktopCapturer>> active_capturers_;
 
+  // Loopback audio capturer active during a screen-share session.
+  // Null when not capturing or on platforms without loopback support.
   std::unique_ptr<LoopbackCapturer> loopback_capturer_;
+  // The custom audio source fed by the loopback capturer.
   scoped_refptr<RTCAudioSource> loopback_audio_source_;
 };
 
